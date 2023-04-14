@@ -1,0 +1,53 @@
+SUMMARY="A Quake 1 engine"
+DESCRIPTION="TyrQuake is a fork of the Quake engine, also known as ID tech 2. \
+It supports Quake and Quakeworld in both software and GL versions. Its goal \
+is to allow running Quake on modern systems as accurately as the original game \
+but provides smoother model animations, coloured lighting, fullbrights in \
+GLQuake, along other improvements."
+HOMEPAGE="https://disenchant.net/tyrquake/"
+COPYRIGHT="2003-2022 Kevin Shanahan"
+LICENSE="GNU GPL v2"
+REVISION="1"
+srcGitRev="c6c73e01822daa0fd17f517dc630aca161269f9f"
+SOURCE_URI="https://disenchant.net/files/engine/tyrquake-0.71.tar.gz"
+CHECKSUM_SHA256="ccdfed38e6258af4778b9f03f6a9e9d323b00548927aba7e7afb0959d8f263d3"
+SOURCE_FILENAME="tyrquake-${portVersion/_/-}.tar.gz"
+SOURCE_DIR="tyrquake-$portVersion"
+PATCHES="tyrquake-0.71.patchset"
+
+ARCHITECTURES="all !x86_gcc2"
+SECONDARY_ARCHITECTURES="x86"
+
+PROVIDES="
+	tyrquake$secondaryArchSuffix = $portVersion
+	addon:tyrquake$secondaryArchSuffix = $portVersion
+	"
+REQUIRES="
+	haiku$secondaryArchSuffix
+	lib:libGL$secondaryArchSuffix
+	lib:libsdl2_2.0$secondaryArchSuffix
+	"
+
+BUILD_REQUIRES="
+	haiku${secondaryArchSuffix}_devel
+	devel:libGL$secondaryArchSuffix
+	devel:libsdl2$secondaryArchSuffix
+	"
+BUILD_PREREQUIRES="
+	cmd:gcc$secondaryArchSuffix
+	cmd:make
+	"
+
+BUILD()
+{
+	make $jobArgs LOCALBASE=$prefix
+}
+
+INSTALL()
+{
+	mkdir -p $appsDir
+	cp bin/tyr-glquake $appsDir
+	cp bin/tyr-quake $appsDir
+	addAppDeskbarSymlink $appsDir/tyr-quake "Quake"
+	addAppDeskbarSymlink $appsDir/tyr-glquake "GLQuake"
+}

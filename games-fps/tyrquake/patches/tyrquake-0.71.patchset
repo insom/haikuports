@@ -1,0 +1,167 @@
+From ac1c8a06330c8f47079364e7ae6c4ce97c9bd66c Mon Sep 17 00:00:00 2001
+From: Aaron Brady <aaron@insom.me.uk>
+Date: Thu, 13 Apr 2023 20:35:57 -0400
+Subject: Haiku Makefile options
+
+---
+ Makefile | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 3f032ea..b90ac5e 100644
+--- a/Makefile
++++ b/Makefile
+@@ -15,7 +15,7 @@ DIST_DIR         ?= dist
+ DEBUG            ?= N# Compile with debug info
+ OPTIMIZED_CFLAGS ?= Y# Enable compiler optimisations (if DEBUG != Y)
+ USE_X86_ASM      ?= $(I386_GUESS)
+-USE_SDL          ?= N# New (experimental) SDL video/sound/input targets
++USE_SDL          ?= Y# New (experimental) SDL video/sound/input targets
+ LOCALBASE        ?= /usr/local
+ QBASEDIR         ?= .# Default basedir for quake data files (Linux/BSD only)
+ TARGET_OS        ?= $(HOST_OS)
+@@ -72,7 +72,7 @@ else
+ ifneq (,$(findstring MINGW64,$(SYSNAME)))
+ HOST_OS = WIN64
+ else
+-ifneq (,$(findstring $(SYSNAME),FreeBSD NetBSD))
++ifneq (,$(findstring $(SYSNAME),FreeBSD NetBSD Haiku))
+ HOST_OS = UNIX
+ HOST_UNIX = bsd
+ else
+@@ -123,7 +123,7 @@ VID_TARGET ?= x11
+ IN_TARGET ?= x11
+ endif
+ ifeq ($(TARGET_UNIX),bsd)
+-CD_TARGET ?= bsd
++CD_TARGET ?= null
+ SND_TARGET ?= oss
+ endif
+ ifeq ($(TARGET_UNIX),openbsd)
+@@ -842,7 +842,7 @@ endif
+ # Includes
+ COMMON_CPPFLAGS += -iquote $(TOPDIR)/include -iquote $(TOPDIR)/external -iquote $(BUILD_DIR)/include
+ COMMON_CPPFLAGS += $(if $(LOCALBASE),-idirafter $(LOCALBASE)/include,)
+-COMMON_LFLAGS   += $(if $(LOCALBASE),$(call libdir-check,$(LOCALBASE)/lib,),)
++COMMON_LFLAGS   += $(if $(LOCALBASE),$(call libdir-check,$(LOCALBASE)/lib,),) -L/boot/system/lib
+ NQCL_CPPFLAGS   += -iquote $(TOPDIR)/NQ
+ QW_CPPFLAGS     += -iquote $(TOPDIR)/QW/client
+ QWSV_CPPFLAGS   += -iquote $(TOPDIR)/QW/server
+@@ -905,7 +905,7 @@ endif
+ ifeq ($(TARGET_OS),UNIX)
+ COMMON_CPPFLAGS += -DELF
+ COMMON_OBJS += net_udp.o sys_unix.o
+-COMMON_LIBS += m
++COMMON_LIBS += m socket
+ NQCL_OBJS   += net_bsd.o
+ 
+ # FIXME - stupid hack
+-- 
+2.30.2
+
+
+From ac1c8a06330c8f47079364e7ae6c4ce97c9bd66c Mon Sep 17 00:00:00 2001
+From: Benjamin FRANCOIS <kwyxz@kwyxz.org>
+Date: Sat, 8 May 2021 23:04:59 -0700
+Subject: Undefine pre-existing functions
+
+---
+ include/common.h | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/include/common.h b/include/common.h
+index 5395ea3..af5c7dd 100644
+--- a/include/common.h
++++ b/include/common.h
+@@ -55,6 +55,12 @@ char *qstrncpy(char *dest, const char *src, size_t size);
+ #define	MAX_LOCALINFO_STRING 32768
+ #endif
+
++// these already pre-exist in Haiku and need to be undef
++#ifdef __HAIKU__
++#undef bswap16
++#undef bswap32
++#endif
++
+ //============================================================================
+
+ typedef struct sizebuf_s {
+-- 
+2.30.2
+
+From d4d1a949d3427dc84fedf4ab62179e67a8247dd1 Mon Sep 17 00:00:00 2001
+From: Aaron Brady <aaron@insom.me.uk>
+Date: Thu, 13 Apr 2023 21:57:41 -0400
+Subject: Override settings directory
+
+---
+ common/common.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/common/common.c b/common/common.c
+index d6b3798..e3206d4 100644
+--- a/common/common.c
++++ b/common/common.c
+@@ -2047,12 +2047,12 @@ COM_InitFileSystem()
+     /* Load ID1 by default */
+     COM_AddGameDirectory(com_basedir, "id1");
+     if (home)
+-        COM_AddGameDirectory(va("%s/.tyrquake", home), "id1");
++        COM_AddGameDirectory(va("%s/config/settings/tyrquake", home), "id1");
+ 
+ #ifdef QW_HACK
+     COM_AddGameDirectory(com_basedir, "qw");
+     if (home)
+-        COM_AddGameDirectory(va("%s/.tyrquake", home), "qw");
++        COM_AddGameDirectory(va("%s/config/settings/tyrquake", home), "qw");
+     com_modified = true;
+     com_game_type = GAME_TYPE_QW;
+ #endif
+@@ -2077,7 +2077,7 @@ COM_InitGameDirectory(const char *gamedir, enum game_type game_type)
+         case GAME_TYPE_HIPNOTIC:
+             COM_AddGameDirectory(com_basedir, "hipnotic");
+             if (home)
+-                COM_AddGameDirectory(va("%s/.tyrquake", home), "hipnotic");
++                COM_AddGameDirectory(va("%s/config/settings/tyrquake", home), "hipnotic");
+             hipnotic = true;
+             standard_quake = false;
+             com_modified = true;
+@@ -2085,7 +2085,7 @@ COM_InitGameDirectory(const char *gamedir, enum game_type game_type)
+         case GAME_TYPE_QUOTH:
+             COM_AddGameDirectory(com_basedir, "quoth");
+             if (home)
+-                COM_AddGameDirectory(va("%s/.tyrquake", home), "quoth");
++                COM_AddGameDirectory(va("%s/config/settings/tyrquake", home), "quoth");
+             hipnotic = true;
+             standard_quake = false;
+             com_modified = true;
+@@ -2093,7 +2093,7 @@ COM_InitGameDirectory(const char *gamedir, enum game_type game_type)
+         case GAME_TYPE_ROGUE:
+             COM_AddGameDirectory(com_basedir, "rogue");
+             if (home)
+-                COM_AddGameDirectory(va("%s/.tyrquake", home), "rogue");
++                COM_AddGameDirectory(va("%s/config/settings/tyrquake", home), "rogue");
+             rogue = true;
+             standard_quake = false;
+             com_modified = true;
+@@ -2101,7 +2101,7 @@ COM_InitGameDirectory(const char *gamedir, enum game_type game_type)
+         case GAME_TYPE_QW:
+             COM_AddGameDirectory(com_basedir, "qw");
+             if (home)
+-                COM_AddGameDirectory(va("%s/.tyrquake", home), "qw");
++                COM_AddGameDirectory(va("%s/config/settings/tyrquake", home), "qw");
+             com_modified = true;
+         default:
+             break;
+@@ -2118,7 +2118,7 @@ COM_InitGameDirectory(const char *gamedir, enum game_type game_type)
+ 
+         COM_AddGameDirectory(com_basedir, gamedir);
+         if (home)
+-            COM_AddGameDirectory(va("%s/.tyrquake", home), gamedir);
++            COM_AddGameDirectory(va("%s/config/settings/tyrquake", home), gamedir);
+     }
+ }
+ 
+-- 
+2.30.2
+
